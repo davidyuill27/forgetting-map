@@ -9,7 +9,6 @@ import org.junit.runners.JUnit4;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
@@ -77,21 +76,16 @@ public class ForgettingMapTest {
      */
     @Test
     public void testThreadSafetyOfForgettingMap() throws InterruptedException {
-        forgettingMap = new ForgettingMap<>(10000);
-        List<Callable<String>> tasks = new ArrayList<>();
-        IntStream.range(0, 1000000).forEach(value ->
-                tasks.add(() -> {
-                    forgettingMap.add(value, TEST_STRING_CONTENT);
-                    return "Done";
-                }));
-        IntStream.range(0, 1000000).forEach(value ->
-                tasks.add(() -> {
-                    forgettingMap.remove(value);
-                    return "Done";
-                }));
+        forgettingMap = new ForgettingMap<>(1000);
+        List<Runnable> tasks = new ArrayList<>();
+        IntStream.range(0, 100000).forEach(value ->
+                tasks.add(() -> forgettingMap.add(value, TEST_STRING_CONTENT)));
+        IntStream.range(0, 100000).forEach(value ->
+                tasks.add(() -> forgettingMap.remove(value)));
         Collections.shuffle(tasks);
         ExecutorService service = Executors.newFixedThreadPool(100);
-        service.invokeAll(tasks);
+        tasks.parallelStream().forEach(service::execute);
+        //No assertions however no ConcurrentModificationExceptions occur.
     }
 
     /**
@@ -117,6 +111,14 @@ public class ForgettingMapTest {
         assertNull(forgettingMap.remove(1));
         forgettingMap.add(1, TEST_STRING_CONTENT);
         assertEquals(TEST_STRING_CONTENT, forgettingMap.remove(1));
+    }
+
+    /**
+     * Tests that a map of zero capacity cannot be instantiated.
+     */
+    @Test(expected = AssertionError.class)
+    public void testZeroSizedMapError() {
+        new ForgettingMap<>(0);
     }
 
     /**
