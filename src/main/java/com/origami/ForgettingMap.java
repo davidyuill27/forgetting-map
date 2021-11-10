@@ -52,6 +52,8 @@ public class ForgettingMap<K, V> {
 
     /**
      * Removes an association.
+     * <p>
+     * Uses synchronized to make it thread-safe.
      *
      * @param key to remove.
      * @return the removed content, if it exists.
@@ -67,6 +69,8 @@ public class ForgettingMap<K, V> {
 
     /**
      * Finds and returns the value for a given key, null if it doesn't exist in the map.
+     * <p>
+     * Uses synchronized to make it thread-safe.
      *
      * @param key to retrieve with.
      * @return the value if it exists, null otherwise.
@@ -157,14 +161,14 @@ public class ForgettingMap<K, V> {
     static class CountAndTime implements Comparable<CountAndTime> {
 
         private Integer count = 0;
-        private final Long timeAddedInNano = System.nanoTime();
+        private final Long timeAddedInMilli = System.currentTimeMillis();
 
         @Override
         public int compareTo(CountAndTime o) {
             int toReturn;
             toReturn = this.count.compareTo(o.count);
             if (toReturn == 0) {
-                toReturn = this.timeAddedInNano.compareTo(o.timeAddedInNano);
+                toReturn = this.timeAddedInMilli.compareTo(o.timeAddedInMilli);
             }
             return toReturn;
         }
